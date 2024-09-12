@@ -19,3 +19,8 @@ dist/
 
 # Logs
 *.log
+
+# Rust
+**target/**
+rust/any_tx_builder/target
+**Cargo.lock**
