@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "evm"
+name = "any_tx_builder"
 version = "0.1.0"
-description = "EVM-Blockchain transaction builder"
+description = "Any-Blockchain transaction builder"
 authors = ["Exo <0xexomonk@gmail.com>"]
 license = "MIT"
 readme = "README.md"
@@ -12,6 +12,7 @@ web3 = "^7.2.0"
 eth-account = "^0.13.3"
 eth-abi = "^5.1.0"
 eth-utils = "^5.0.0"
+python-dotenv = "^1.0.1"
 
 
 [build-system]

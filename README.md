@@ -8,6 +8,14 @@
 Requirements
 web3 eth-account eth-abi eth-utils py-solc-x
 
+.env file:
+
+```
+PROVIDER_URL=PROVIDER_URL
+PRIVATE_KEY=YOUR-PRIVATE-KEY
+FROM_ADDRESS=YOUR-FROM-ADDRESS
+```
+
 ## Tendermint Transaction Builder
 
 - Cosmos
