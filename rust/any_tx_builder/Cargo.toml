@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-web3 = "0.19.0"
+web3 = { version = "0.18.0", features = ["signing"] }
 dotenv = "0.15.0"
 tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+serde_json = "1.0"
