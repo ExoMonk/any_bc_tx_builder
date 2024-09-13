@@ -1,6 +1,5 @@
 from .builder import EVMTransactionBuilder
 from typing import Optional, Dict, Any
-from web3 import Web3
 
 class Swapper:
     def __init__(self, tx_builder: EVMTransactionBuilder, private_key: str):
@@ -8,8 +7,8 @@ class Swapper:
         self.account = self.w3.eth.account.from_key(private_key)
 
     def sign_and_send_transaction(self, transaction: Dict[str, Any]) -> str:
-        signed_txn = self.account.sign_transaction(transaction)
-        tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        signed_txn = self.sign_transaction(transaction, self.account.private_key)
+        tx_hash = self.broadcast_transaction(signed_txn.rawTransaction)
         print(f" ✅ Transaction sent: {tx_hash}")
         return self.w3.to_hex(tx_hash)
 

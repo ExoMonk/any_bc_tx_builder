@@ -2,12 +2,13 @@ import os
 import json
 import requests
 from web3.exceptions import ContractLogicError
+from web3 import Web3
 
 from evm.config import POLYGON_STAKING_CONTRACT, POLYGON_TOKEN_CONTRACT
 from builder_base import BaseTransactionBuilder
 
 class EVMTransactionBuilder(BaseTransactionBuilder):
-    def __init__(self, w3_con):
+    def __init__(self, w3_con: Web3):
         self.w3 = w3_con
 
     def _estimate_gas_price(self):
@@ -119,6 +120,16 @@ class EVMTransactionBuilder(BaseTransactionBuilder):
         gas = self._estimate_gas(transaction)
         transaction['gas'] = gas
         return transaction
+
+    def sign_transaction(self, transaction: dict, private_key: str) -> Web3.Transaction:
+        account: Web3.Account = self.w3.eth.account.from_key(private_key)
+        signed_txn: Web3.Transaction = account.sign_transaction(transaction)
+        return signed_txn
+    
+    def broadcast_transaction(self, signed_raw_transaction: str) -> str:
+        tx_hash = self.w3.eth.send_raw_transaction(signed_raw_transaction)
+        print(f" ✅ Transaction sent: {tx_hash}")
+        return self.w3.to_hex(tx_hash)
 
     def is_transaction_broadcasted(self, tx_hash: str) -> bool:
         """
