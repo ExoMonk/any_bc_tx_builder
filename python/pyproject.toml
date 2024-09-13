@@ -17,6 +17,7 @@ solana = "^0.34.3"
 anchorpy = "^0.20.1"
 solders = "^0.21.0"
 base58 = "^2.1.1"
+cosmos-sdk = "^0.0.3"
 
 
 [build-system]
