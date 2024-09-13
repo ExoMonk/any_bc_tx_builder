@@ -90,7 +90,7 @@ def main():
     signed_txn = w3.eth.account.sign_transaction(allowance_tx, account.key)
     print("-----------🏃 TX SENT-----------------")
     print(bytes.fromhex(signed_txn.raw_transaction.hex()))
-    w3.eth.send_raw_transaction(bytes.fromhex(signed_txn.raw_transaction.hex()))
+    sent = w3.eth.send_raw_transaction(bytes.fromhex(signed_txn.raw_transaction.hex()))
     tx_hash = w3.to_hex(w3.keccak(signed_txn.raw_transaction))
     print(f"✨ Transaction hash: {tx_hash}")
     print("-------------------------------------")
