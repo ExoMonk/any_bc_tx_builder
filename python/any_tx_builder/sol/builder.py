@@ -1,14 +1,14 @@
 from solana.rpc.api import Client
 from solana.transaction import Transaction
+from solana.constants import SYSTEM_PROGRAM_ID
 from solders.keypair import Keypair # type: ignore
 from solders.pubkey import Pubkey # type: ignore
 from solders.system_program import transfer, TransferParams
 from solders.instruction import Instruction, AccountMeta # type: ignore
 from solders.system_program import create_account, CreateAccountParams # type: ignore
-import json
 
 from builder_base import BaseTransactionBuilder
-
+from sol.utils import INSTRUCTIONS_LAYOUT, InstructionType, Authorized, Lockup
 
 class SolanaTransactionBuilder(BaseTransactionBuilder):
 
@@ -66,8 +66,10 @@ class SolanaTransactionBuilder(BaseTransactionBuilder):
     
     def broadcast_transaction(self, transaction: Transaction, private_key: str, additionnal_signer: Keypair = None) -> str:
         sender = Keypair.from_base58_string(private_key)
+        recent_blockhash = self.client.get_latest_blockhash().value.blockhash
+
         if additionnal_signer:
-            tx_sent = self.client.send_transaction(transaction, sender, additionnal_signer)
+            tx_sent = self.client.send_transaction(transaction, sender, additionnal_signer, recent_blockhash=recent_blockhash)
         else:
             tx_sent = self.client.send_transaction(transaction, sender)
         print(f"✅ Transaction sent: {tx_sent}")
@@ -112,50 +114,25 @@ class SolanaStakingTransactionBuilder(SolanaTransactionBuilder):
 
         # Initialize stake instruction
 
-        json_instructions = {
-            "info": {
-                "authorized": {
-                    "staker": from_address,
-                    "withdrawer": from_address
-                },
-                "lockup": {
-                    "custodian": "11111111111111111111111111111111",
-                    "epoch": 0,
-                    "unixTimestamp": 0
-                },
-                "rentSysvar": "SysvarRent111111111111111111111111111111111",
-                "stakeAccount": str(stake_account_pubkey)
-            },
-            "type": "initialize"
-        }
-        instruction_data = json.dumps(json_instructions).encode('utf-8')
-
         init_stake_ix = Instruction(
-            program_id=Pubkey.from_string("Stake11111111111111111111111111111111111111"),
             accounts=[
                 AccountMeta(pubkey=stake_account_pubkey, is_signer=False, is_writable=True),
-                AccountMeta(pubkey=wallet_pubkey, is_signer=True, is_writable=False),
                 AccountMeta(pubkey=Pubkey.from_string("SysvarRent111111111111111111111111111111111"), is_signer=False, is_writable=False),
             ],
-            data=instruction_data
+            program_id=Pubkey.from_string("Stake11111111111111111111111111111111111111"),
+            data=INSTRUCTIONS_LAYOUT.build(
+                dict(
+                    instruction_type=InstructionType.INITIALIZE,
+                    args=dict(
+                        authorized=Authorized(staker=wallet_pubkey, withdrawer=wallet_pubkey).as_bytes_dict(),
+                        lockup=Lockup(unix_timestamp=0, epoch=0, custodian=SYSTEM_PROGRAM_ID).as_bytes_dict(),
+                    ),
+                )
+            )
         )
 
         # Deposit stake instruction
-        json_deposit = {
-            "info": {
-                "clockSysvar": "SysvarC1ock11111111111111111111111111111111",
-                "stakeAccount": str(stake_account_pubkey),
-                "stakeAuthority": str(from_address),
-                "stakeConfigAccount": "StakeConfig11111111111111111111111111111111",
-                "stakeHistorySysvar": "SysvarStakeHistory1111111111111111111111111",
-                "voteAccount": "Ak5BJzQe2R8qFuyYmaAFPjXuD7XPux3ZNTv52D7rfiqR"
-            },
-            "type": "delegate"
-        }
-
-        deposit_data = json.dumps(json_deposit).encode('utf-8')
         deposit_stake_ix = Instruction(
-            program_id=Pubkey.from_string("Stake11111111111111111111111111111111111111"),
             accounts=[
                 AccountMeta(pubkey=stake_account_pubkey, is_signer=False, is_writable=True),
                 AccountMeta(pubkey=validator_pubkey, is_signer=False, is_writable=False),
@@ -164,7 +141,13 @@ class SolanaStakingTransactionBuilder(SolanaTransactionBuilder):
                 AccountMeta(pubkey=Pubkey.from_string("StakeConfig11111111111111111111111111111111"), is_signer=False, is_writable=False),
                 AccountMeta(pubkey=wallet_pubkey, is_signer=True, is_writable=False),
             ],
-            data=deposit_data
+            program_id=Pubkey.from_string("Stake11111111111111111111111111111111111111"),
+            data=INSTRUCTIONS_LAYOUT.build(
+                dict(
+                    instruction_type=InstructionType.DELEGATE_STAKE,
+                    args=None,
+                )
+            )
         )
 
         stake_account_transaction.add(create_account_ix)
