@@ -1,9 +1,9 @@
 from typing import List, Optional
 
 import attr
-from tendermint.coin import Coin_
-from tendermint.proto import Fee
-from tendermint.types import AccAddress
+from any_tx_builder.tendermint.coin import Coin_
+from any_tx_builder.tendermint.proto import Fee
+from any_tx_builder.tendermint.types import AccAddress
 
 
 @attr.s

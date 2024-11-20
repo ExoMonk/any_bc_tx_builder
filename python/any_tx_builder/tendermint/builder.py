@@ -7,16 +7,16 @@ from ecdsa import SECP256k1, SigningKey
 from ecdsa.util import sigencode_string_canonize
 from bip32utils import BIP32_HARDEN, BIP32Key
 from mnemonic import Mnemonic
-from tendermint.client import TendermintClient
-from tendermint.key import PublicKey
-from tendermint.transactions.signature import (
+from any_tx_builder.tendermint.client import TendermintClient
+from any_tx_builder.tendermint.key import PublicKey
+from any_tx_builder.tendermint.transactions.signature import (
     Descriptor,
     SignatureV2,
     SignDoc_,
     SignOptions,
     Single,
 )
-from tendermint.transactions import (
+from any_tx_builder.tendermint.transactions import (
     AuthInfo_,
     CreateTxOptions,
     ModeInfo_,
@@ -25,13 +25,13 @@ from tendermint.transactions import (
     Tx_,
     TxBody_,
 )
-from tendermint.proto import SignMode
-from tendermint.types import AccAddress
-from tendermint.key import Account
+from any_tx_builder.tendermint.proto import SignMode
+from any_tx_builder.tendermint.types import AccAddress
+from any_tx_builder.tendermint.key import Account
 
 
 class Wallet:
-    def __init__(self, chain: str, client: TendermintClient, acc_address: AccAddress):
+    def __init__(self, client: TendermintClient, acc_address: AccAddress):
         self.client: TendermintClient = client
         self.key: Account = Account.from_data(self.client.get_account_info(acc_address))
         self.private_key = None
@@ -87,7 +87,7 @@ class Wallet:
         sign_options = SignOptions(
             account_number=self.key.account_number,
             sequence=self.key.sequence,
-            chain_id=self.chain_id,
+            chain_id=self.client.chain_id,
             sign_mode=SignMode.SIGN_MODE_DIRECT,
         )
         signedTx = Tx_(

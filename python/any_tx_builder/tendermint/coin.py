@@ -2,7 +2,7 @@ import re
 from typing import Union
 
 import attr
-from tendermint.proto import Coin
+from any_tx_builder.tendermint.proto import Coin
 
 
 @attr.s(frozen=True)

@@ -1,8 +1,8 @@
 import base64
 
 from pydantic import BaseModel
-from tendermint.proto import Any_pb, PubKey
-from tendermint.types import AccAddress
+from any_tx_builder.tendermint.proto import Any_pb, PubKey
+from any_tx_builder.tendermint.types import AccAddress
 
 class PublicKey(BaseModel):
     type: str

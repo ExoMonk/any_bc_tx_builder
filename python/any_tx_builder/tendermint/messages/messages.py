@@ -3,10 +3,10 @@ from abc import abstractmethod
 import attr
 from betterproto import Message
 
-from tendermint.coin import Coin_
-from tendermint.proto import Any_pb, MsgDelegate
-from tendermint.types import AccAddress, ValAddress
-from tendermint.utils import dict_to_data
+from any_tx_builder.tendermint.coin import Coin_
+from any_tx_builder.tendermint.proto import Any_pb, MsgDelegate
+from any_tx_builder.tendermint.types import AccAddress, ValAddress
+from any_tx_builder.tendermint.utils import dict_to_data
 
 
 class BaseTendermintData(Message):

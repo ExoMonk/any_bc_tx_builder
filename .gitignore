@@ -11,7 +11,7 @@ __pycache__/
 dist/
 
 # Environment variables
-**.env**
+**.env
 
 # IDE specific files
 .vscode/

@@ -1,9 +1,9 @@
 from typing import Optional
 
 import attr
-from tendermint.key import PublicKey
-from tendermint.transactions.transactions import AuthInfo_, TxBody_
-from tendermint.proto import SignDoc, SignMode
+from any_tx_builder.tendermint.key import PublicKey
+from any_tx_builder.tendermint.transactions.transactions import AuthInfo_, TxBody_
+from any_tx_builder.tendermint.proto import SignDoc, SignMode
 
 
 @attr.s

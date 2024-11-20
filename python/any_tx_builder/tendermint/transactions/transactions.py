@@ -3,11 +3,11 @@ import hashlib
 from typing import List, Optional
 
 import attr
-from tendermint.coin import Coin_
-from tendermint.transactions.fee import Fee_
-from tendermint.key import PublicKey
-from tendermint.messages import BaseTendermintData
-from tendermint.proto import (
+from any_tx_builder.tendermint.coin import Coin_
+from any_tx_builder.tendermint.transactions.fee import Fee_
+from any_tx_builder.tendermint.key import PublicKey
+from any_tx_builder.tendermint.messages import BaseTendermintData
+from any_tx_builder.tendermint.proto import (
     AuthInfo,
     ModeInfo,
     ModeInfoSingle,

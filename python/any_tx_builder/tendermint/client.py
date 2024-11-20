@@ -2,16 +2,16 @@ import copy
 from typing import List, Optional
 import requests
 
-from tendermint.coin import Coin_
-from tendermint.transactions.fee import Fee_
-from tendermint.transactions import (
+from any_tx_builder.tendermint.coin import Coin_
+from any_tx_builder.tendermint.transactions.fee import Fee_
+from any_tx_builder.tendermint.transactions import (
     AuthInfo_,
     CreateTxOptions,
     SignerInfo_,
     Tx_,
     TxBody_,
 )
-from tendermint.types import AccAddress
+from any_tx_builder.tendermint.types import AccAddress
 
 
 class TendermintClient:

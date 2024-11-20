@@ -10,8 +10,9 @@ class TendermintChainConfig(BaseModel):
     rpc_url: str
     denom: str
     base_gas_price: str
-
-
+    chain: str
+    chain_id: str
+    coin_type: int
 #
 # Cosmos Constants
 #
@@ -25,5 +26,8 @@ TENDERMINT_SETUP = {
         rpc_url=COSMOS_RPC_URL,
         denom=COSMOS_DENOM,
         base_gas_price=COSMOS_BASE_GAS_PRICE,
+        chain="cosmos",
+        chain_id="cosmoshub-4",
+        coin_type=118,
     )
 }
