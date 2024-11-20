@@ -1,151 +1,139 @@
-from decimal import Decimal
-from typing import Any, List, Optional
-from abc import ABC, abstractmethod
-from .connection import TendermintConnection
-from decimal import Decimal
-from typing import Any, Optional
-from cosmos_sdk.core.bank import MsgSend
-from cosmos_sdk.core.staking import MsgDelegate, MsgUndelegate, MsgBeginRedelegate
-from pyinjective.wallet import Address
-from pyinjective.transaction import Transaction
+import base64
+import copy
+import hashlib
+from typing import List
 
-from tendermint.connection import InjectiveConnection
+from ecdsa import SECP256k1, SigningKey
+from ecdsa.util import sigencode_string_canonize
+from bip32utils import BIP32_HARDEN, BIP32Key
+from mnemonic import Mnemonic
+from tendermint.client import TendermintClient
+from tendermint.key import PublicKey
+from tendermint.transactions.signature import (
+    Descriptor,
+    SignatureV2,
+    SignDoc_,
+    SignOptions,
+    Single,
+)
+from tendermint.transactions import (
+    AuthInfo_,
+    CreateTxOptions,
+    ModeInfo_,
+    ModeInfoSingle_,
+    SignerInfo_,
+    Tx_,
+    TxBody_,
+)
+from tendermint.proto import SignMode
+from tendermint.types import AccAddress
+from tendermint.key import Account
 
-class TendermintTxBuilder(ABC):
-    def __init__(self, connection: TendermintConnection):
-        self.connection = connection
 
-    @abstractmethod
-    async def create_send_tx(self, 
-                             sender: str, 
-                             recipient: str, 
-                             amount: Decimal, 
-                             denom: str, 
-                             memo: Optional[str] = None) -> Any:
-        pass
+class Wallet:
+    def __init__(self, chain: str, client: TendermintClient, acc_address: AccAddress):
+        self.client: TendermintClient = client
+        self.key: Account = Account.from_data(self.client.get_account_info(acc_address))
+        self.private_key = None
 
-    @abstractmethod
-    async def create_delegate_tx(self,
-                                 delegator: str,
-                                 validator: str,
-                                 amount: Decimal,
-                                 denom: str,
-                                 memo: Optional[str] = None) -> Any:
-        pass
-
-    @abstractmethod
-    async def create_undelegate_tx(self,
-                                   delegator: str,
-                                   validator: str,
-                                   amount: Decimal,
-                                   denom: str,
-                                   memo: Optional[str] = None) -> Any:
-        pass
-
-    @abstractmethod
-    async def create_redelegate_tx(self,
-                                   delegator: str,
-                                   validator_src: str,
-                                   validator_dst: str,
-                                   amount: Decimal,
-                                   denom: str,
-                                   memo: Optional[str] = None) -> Any:
-        pass
-
-#
-# Cosmos Tx Builder
-#
-
-class CosmosTxBuilder(TendermintTxBuilder):
-    async def create_send_tx(self, 
-                             sender: str, 
-                             recipient: str, 
-                             amount: Decimal, 
-                             denom: str, 
-                             memo: Optional[str] = None) -> Any:
-        msg = MsgSend(
-            from_address=sender,
-            to_address=recipient,
-            amount=f"{amount}{denom}"
+    def set_private_key(self, mnemonic: str, coin_type: int, account: int, index: int):
+        seed = Mnemonic("english").to_seed(mnemonic)
+        root = BIP32Key.fromEntropy(seed)
+        child = (
+            root.ChildKey(44 + BIP32_HARDEN)
+            .ChildKey(coin_type + BIP32_HARDEN)
+            .ChildKey(account + BIP32_HARDEN)
+            .ChildKey(0)
+            .ChildKey(index)
         )
-        return self._create_tx([msg], memo)
-
-    async def create_delegate_tx(self,
-                                 delegator: str,
-                                 validator: str,
-                                 amount: Decimal,
-                                 denom: str,
-                                 memo: Optional[str] = None) -> Any:
-        msg = MsgDelegate(
-            delegator_address=delegator,
-            validator_address=validator,
-            amount=f"{amount}{denom}"
+        self.private_key = child.PrivateKey()
+        self.key.public_key = PublicKey(
+            type="/cosmos.crypto.secp256k1.PubKey",
+            key=SigningKey.from_string(self.private_key, curve=SECP256k1).get_verifying_key().to_string("compressed")
         )
-        return self._create_tx([msg], memo)
 
-    async def create_undelegate_tx(self,
-                                   delegator: str,
-                                   validator: str,
-                                   amount: Decimal,
-                                   denom: str,
-                                   memo: Optional[str] = None) -> Any:
-        msg = MsgUndelegate(
-            delegator_address=delegator,
-            validator_address=validator,
-            amount=f"{amount}{denom}"
+    def account_number_and_sequence(self) -> dict:
+        account_info = self.client.get_account_info(self.key.acc_address)
+        return {
+            "account_number": account_info.get("account_number"),
+            "sequence": account_info.get("sequence"),
+        }
+
+    def sign(self, payload: bytes) -> bytes:
+        sk = SigningKey.from_string(self.private_key, curve=SECP256k1)
+        return sk.sign_deterministic(
+            payload,
+            hashfunc=hashlib.sha256,
+            sigencode=sigencode_string_canonize,
         )
-        return self._create_tx([msg], memo)
 
-    async def create_redelegate_tx(self,
-                                   delegator: str,
-                                   validator_src: str,
-                                   validator_dst: str,
-                                   amount: Decimal,
-                                   denom: str,
-                                   memo: Optional[str] = None) -> Any:
-        msg = MsgBeginRedelegate(
-            delegator_address=delegator,
-            validator_src_address=validator_src,
-            validator_dst_address=validator_dst,
-            amount=f"{amount}{denom}"
+    def build_tx(self, tx_options: CreateTxOptions) -> dict:
+        signer_data: List[SignerInfo_] = [
+            SignerInfo_(
+                self.key.sequence, self.key.public_key, ModeInfo_(single=ModeInfoSingle_(SignMode.SIGN_MODE_DIRECT))
+            )
+        ]
+
+        if tx_options.fee is None:
+            tx_options.fee = self.client.estimate_fee(signer_data, tx_options)
+
+        return Tx_(
+            TxBody_(tx_options.msgs, tx_options.memo or "", tx_options.timeout_height or 0),
+            AuthInfo_([], tx_options.fee),
+            [],
         )
-        return self._create_tx([msg], memo)
 
-    def _create_tx(self, msgs: List[Any], memo: Optional[str] = None) -> Any:
-        return self.connection.client.tx.create(msgs, memo=memo)
+    def sign_tx(self, tx: Tx_):
+        sign_options = SignOptions(
+            account_number=self.key.account_number,
+            sequence=self.key.sequence,
+            chain_id=self.chain_id,
+            sign_mode=SignMode.SIGN_MODE_DIRECT,
+        )
+        signedTx = Tx_(
+            body=tx.body,
+            auth_info=AuthInfo_(signer_infos=[], fee=tx.auth_info.fee),
+            signatures=[],
+        )
+        sign_doc = SignDoc_(
+            chain_id=sign_options.chain_id,
+            account_number=sign_options.account_number,
+            sequence=sign_options.sequence,
+            auth_info=signedTx.auth_info,
+            tx_body=signedTx.body,
+        )
 
-#
-# Injective Tx Builder
-#
+        si_backup = copy.deepcopy(sign_doc.auth_info.signer_infos)
+        sign_doc.auth_info.signer_infos = [
+            SignerInfo_(
+                public_key=self.key.public_key,
+                sequence=sign_doc.sequence,
+                mode_info=ModeInfo_(single=ModeInfoSingle_(mode=SignMode.SIGN_MODE_DIRECT)),
+            )
+        ]
+        signature = self.sign(sign_doc.to_bytes())
+        # restore
+        sign_doc.auth_info.signer_infos = si_backup
+        final_signature = SignatureV2(
+            public_key=self.key.public_key,
+            data=Descriptor(single=Single(mode=SignMode.SIGN_MODE_DIRECT, signature=signature)),
+            sequence=sign_doc.sequence,
+        )
 
-class InjectiveTxBuilder(TendermintTxBuilder):
-    def __init__(self, connection: InjectiveConnection):
-        self.connection = connection
-
-    async def create_send_tx(self, 
-                             sender: Address, 
-                             recipient: str, 
-                             amount: Decimal, 
-                             denom: str, 
-                             memo: Optional[str] = None):
-        if not self.connection.is_connected:
-            await self.connection.connect()
-
-        tx = Transaction()
-        tx.with_messages(
-            tx.msg_send(
-                sender.to_acc_bech32(),
-                recipient,
-                amount,
-                denom
+        sig_data: Single = final_signature.data.single
+        for sig in tx.signatures:
+            signedTx.signatures.append(sig)
+        signedTx.signatures.append(sig_data.signature)
+        for infos in tx.auth_info.signer_infos:
+            signedTx.auth_info.signer_infos.append(infos)
+        signedTx.auth_info.signer_infos.append(
+            SignerInfo_(
+                public_key=final_signature.public_key,
+                sequence=final_signature.sequence,
+                mode_info=ModeInfo_(single=ModeInfoSingle_(mode=sig_data.mode)),
             )
         )
-        if memo:
-            tx.with_memo(memo)
+        return signedTx
 
-        account = await self.connection.client.get_account(sender.to_acc_bech32())
-        tx.with_account_num(account.account_number)
-        tx.with_sequence(account.sequence)
-        tx.with_chain_id(self.connection.network.chain_id)
-
-        return tx
+    def broadcast(self, tx: Tx_):
+        return self.client._broadcast(tx)
