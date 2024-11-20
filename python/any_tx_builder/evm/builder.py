@@ -4,8 +4,8 @@ import requests
 from web3.exceptions import ContractLogicError
 from web3 import Web3
 
-from evm.config import POLYGON_STAKING_CONTRACT, POLYGON_TOKEN_CONTRACT
-from builder_base import BaseTransactionBuilder
+from any_tx_builder.evm.config import POLYGON_STAKING_CONTRACT, POLYGON_TOKEN_CONTRACT
+from any_tx_builder.builder_base import BaseTransactionBuilder
 
 class EVMTransactionBuilder(BaseTransactionBuilder):
     def __init__(self, w3_con: Web3):
@@ -121,9 +121,9 @@ class EVMTransactionBuilder(BaseTransactionBuilder):
         transaction['gas'] = gas
         return transaction
 
-    def sign_transaction(self, transaction: dict, private_key: str) -> Web3.Transaction:
-        account: Web3.Account = self.w3.eth.account.from_key(private_key)
-        signed_txn: Web3.Transaction = account.sign_transaction(transaction)
+    def sign_transaction(self, transaction: dict, private_key: str):
+        account = self.w3.eth.account.from_key(private_key)
+        signed_txn = account.sign_transaction(transaction)
         return signed_txn
     
     def broadcast_transaction(self, signed_raw_transaction: str) -> str:

@@ -15,10 +15,8 @@ def main():
     w3 = setup_web3_connection()
     builder = PolygonStakingTransactionBuilder(w3)
     
-    from_address = os.getenv('FROM_ADDRESS')
-    to_address = "0x.."
-    private_key = os.environ.get("PRIVATE_KEY")
-    account = w3.eth.account.from_key(private_key)
+    from_address = os.getenv('EVM_WALLET_ADDRESS')
+    account = w3.eth.account.from_key(os.getenv('EVM_PRIVATE_KEY'))
     assert account.address == from_address
 
     functions = builder.list_contract_functions(POLYGON_STAKING_CONTRACT)
@@ -28,8 +26,8 @@ def main():
     #
 
     # Delegation
-    validator_address = "0x02a9F16b353410f150Fb25F7983B3DC90Db4679D"#VALIDATOR_ADDRESS
-    staking_amount = 1000000000000000000
+    validator_address = VALIDATOR_ADDRESS
+    staking_amount = 1000000000000000
     unstaking_amount = int(staking_amount / 2)
 
     allowance_tx = builder.build_POL_allowance_transaction(

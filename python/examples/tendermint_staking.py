@@ -43,12 +43,16 @@ def build_cosmos_delegation_tx(cosmos_address: AccAddress):
 
     # Build the transaction
     tx = wallet.build_tx(tx_options)
+    print("✨ Delegation transaction built")
+
     # Sign the transaction
     signed_tx = wallet.sign_tx(tx)
+    print("✨ Transaction signed:")
     print(signed_tx.to_data())
 
     # Broadcast the transaction
     sent = wallet.broadcast(signed_tx)
+    print("-----------🏃 Transaction Sent-----------------")
     print(sent)
     return signed_tx
 

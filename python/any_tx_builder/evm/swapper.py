@@ -1,4 +1,4 @@
-from .builder import EVMTransactionBuilder
+from any_tx_builder.evm.builder import EVMTransactionBuilder
 from typing import Optional, Dict, Any
 
 class Swapper:
