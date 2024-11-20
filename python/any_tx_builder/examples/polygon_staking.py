@@ -1,11 +1,11 @@
-from web3.exceptions import ContractLogicError
-from evm.connection import setup_web3_connection
-from evm.builder import PolygonStakingTransactionBuilder
-from dotenv import load_dotenv
 import os
+from web3.exceptions import ContractLogicError
+from any_tx_builder.evm.connection import setup_web3_connection
+from any_tx_builder.evm.builder import PolygonStakingTransactionBuilder
+from dotenv import load_dotenv
 
 # Import the contract address
-from evm.config import VALIDATOR_ADDRESS, POLYGON_STAKING_CONTRACT
+from any_tx_builder.evm.config import VALIDATOR_ADDRESS, POLYGON_STAKING_CONTRACT
 
 # Load environment variables
 load_dotenv()
