@@ -25,7 +25,7 @@ def build_cosmos_delegation_tx(cosmos_address: AccAddress):
         chain_id=SETUP.chain_id,
     )
     wallet = Wallet(cosmos_client, cosmos_address)
-    wallet.set_private_key(os.getenv('TENDERMINT_WALLET_PRIVATE_KEY'), SETUP.coin_type, 0, 0)
+    wallet.set_private_key(os.getenv('TENDERMINT_PRIVATE_KEY'), SETUP.coin_type, 0, 0)
 
     # Delegation Transaction Message
     # https://docs.cosmos.network/main/modules/staking/03_msg_delegate.html

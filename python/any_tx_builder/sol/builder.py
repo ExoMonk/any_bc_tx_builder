@@ -7,8 +7,8 @@ from solders.system_program import transfer, TransferParams
 from solders.instruction import Instruction, AccountMeta # type: ignore
 from solders.system_program import create_account, CreateAccountParams # type: ignore
 
-from builder_base import BaseTransactionBuilder
-from sol.utils import INSTRUCTIONS_LAYOUT, InstructionType, Authorized, Lockup
+from any_tx_builder.builder_base import BaseTransactionBuilder
+from any_tx_builder.sol.utils import INSTRUCTIONS_LAYOUT, InstructionType, Authorized, Lockup
 
 class SolanaTransactionBuilder(BaseTransactionBuilder):
 
@@ -64,16 +64,10 @@ class SolanaTransactionBuilder(BaseTransactionBuilder):
             transaction.sign(keypair)
         return transaction 
     
-    def broadcast_transaction(self, transaction: Transaction, private_key: str, additionnal_signer: Keypair = None) -> str:
-        sender = Keypair.from_base58_string(private_key)
-        recent_blockhash = self.client.get_latest_blockhash().value.blockhash
-
-        if additionnal_signer:
-            tx_sent = self.client.send_transaction(transaction, sender, additionnal_signer, recent_blockhash=recent_blockhash)
-        else:
-            tx_sent = self.client.send_transaction(transaction, sender)
+    def broadcast_transaction(self, transaction: Transaction) -> str:
+        tx_sent = self.client.send_transaction(transaction)
         print(f"✅ Transaction sent: {tx_sent}")
-        return tx_sent.to_json()
+        return tx_sent
 
     def is_transaction_broadcasted(self, tx_signature: str) -> bool:
         try:
@@ -90,7 +84,7 @@ class SolanaStakingTransactionBuilder(SolanaTransactionBuilder):
     def __init__(self, client: Client):
         self.client = client
 
-    def build_staking_transaction(self, from_address: str, validator_address: str, amount: int) -> Transaction:
+    def build_staking_transaction(self, from_address: str, validator_address: str, staking_amount: int) -> tuple[Transaction, Keypair]:
         # Generating pubkey for the stake account
         wallet_pubkey = Pubkey.from_string(from_address)
         stake_account_keypair = Keypair()
@@ -98,7 +92,7 @@ class SolanaStakingTransactionBuilder(SolanaTransactionBuilder):
 
         validator_pubkey = Pubkey.from_string(validator_address)
 
-        amount = amount * self.LAMPORTS_PER_SOL
+        amount = int(staking_amount * self.LAMPORTS_PER_SOL)
 
         # Create transaction
         stake_account_transaction = Transaction()
@@ -158,6 +152,6 @@ class SolanaStakingTransactionBuilder(SolanaTransactionBuilder):
         stake_account_transaction.recent_blockhash = latest_blockhash.value.blockhash
         stake_account_transaction.fee_payer = wallet_pubkey   
 
-        print(f"Staking {amount} SOL to [{stake_account_pubkey}]")
+        print(f"Staking {staking_amount} SOL to [{stake_account_pubkey}]")
         #payload = bytes(stake_account_transaction.message()).hex()
         return stake_account_transaction, stake_account_keypair
